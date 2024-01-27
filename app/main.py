@@ -19,6 +19,8 @@ class DNSMessage:
     nscount: int
     arcount: int
 
+    PACK_STR: ClassVar[str] = ">HBBHHHH"
+
     ID_LEN: ClassVar[int] = 16
     QR_LEN: ClassVar[int] = 1
     OP_CODE_LEN: ClassVar[int] = 4
@@ -34,6 +36,41 @@ class DNSMessage:
     ARCOUNT_LEN : ClassVar[int] = 16
 
 
+    @staticmethod
+    def from_header_bytes(data):
+        (
+            id,
+            combined1,
+            combined2,
+            qdcount,
+            ancount,
+            nscount,
+            arcount
+        ) = struct.unpack(DNSMessage.PACK_STR, data)
+
+        op_code_shift = DNSMessage.RD_LEN + DNSMessage.TC_LEN + DNSMessage.AA_LEN
+        op_code = (combined1 >> op_code_shift) & 0b1111
+        r_code =  0 if op_code == 0 else 4
+        rd_shift = 0
+        rd = (combined1 >> rd_shift) & 0x1
+
+        return DNSMessage(
+            id = id,
+            qr = 1,
+            op_code = op_code,
+            aa = 0,
+            tc = 0,
+            rd = rd,
+            ra = 0,
+            z = 0,
+            rcode = r_code,
+            qdcount= 1,
+            ancount= 1,
+            nscount= 0,
+            arcount= 0
+        )
+
+    
     def serialize(self) -> str :
         # assumes bit endian
         combined1 = 0
@@ -65,6 +102,7 @@ class DNSMessage:
 
         return struct.pack(
             ">HBBHHHH",
+            DNSMessage.PACK_STR,
             self.id,
             combined1,
             combined2,
@@ -106,35 +144,9 @@ def main():
 
     while True:
         try:
-            data, source = udp_socket.recvfrom(512)
-            id = struct.unpack('>H', data[0:2])[0]
-            byte = struct.unpack('>B', data[2:3])[0]
-            qr = byte >> 7 # left most bit
-            op_code = (byte >> 3) & 0b1111 # next 4 bits
-            aa = (byte >> 2) & 0b1 # 1 bit after op_code
-            tc = (byte >> 1) & 0b1 # 1 bit after aa 
-            rd = byte & 0b1 # last bit
-
-            rcode = 0 if op_code == 0 else 4
-    
-            response = b""
-            if first:
-                response_data = DNSMessage(
-                    id = id,
-                    qr = 1,
-                    op_code = op_code,
-                    aa = 0,
-                    tc = 0,
-                    rd = rd,
-                    ra = 0,
-                    z = 0,
-                    rcode = rcode,
-                    qdcount= 1,
-                    ancount= 1,
-                    nscount= 0,
-                    arcount= 0
-                )
-            response = response_data.serialize()
+            buf, source = udp_socket.recvfrom(512)
+            response_header_data = DNSMessage.from_header_bytes(buf)
+            response = response_header_data.serialize()
 
             # added the question section 
 
