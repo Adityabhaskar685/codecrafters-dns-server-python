@@ -46,7 +46,7 @@ class DNSMessage:
             ancount,
             nscount,
             arcount
-        ) = struct.unpack(DNSMessage.PACK_STR, data)
+        ) = struct.unpack(DNSMessage.PACK_STR, data[:12])
 
         op_code_shift = DNSMessage.RD_LEN + DNSMessage.TC_LEN + DNSMessage.AA_LEN
         op_code = (combined1 >> op_code_shift) & 0b1111
