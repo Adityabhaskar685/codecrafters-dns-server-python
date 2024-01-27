@@ -148,11 +148,18 @@ def main():
             response = response_header_data.serialize()
 
             # added the question section 
+            idx = 12
+            while buf[idx] != 0 and idx < len(buf):
+                idx += 1
 
-            question = encode_url('codecrafters.io') + type_dict['A'] + class_dict['IN']
+            domain_data = buf[12:idx] + struct.pack('>B', 0x00)
+
+
+
+            question = domain_data + type_dict['A'] + class_dict['IN']
             response += question
 
-            answer = encode_url('codecrafters.io') + type_dict['A'] + class_dict['IN'] + struct.pack('>I', 60) + struct.pack('>H', RDLENGTH) + struct.pack('>BBBB', 8,8,8,8)
+            answer = domain_data + type_dict['A'] + class_dict['IN'] + struct.pack('>I', 60) + struct.pack('>H', RDLENGTH) + struct.pack('>BBBB', 8,8,8,8)
             response += answer
 
     
