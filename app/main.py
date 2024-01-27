@@ -73,6 +73,16 @@ class DNSMessage:
             self.nscount,
             self.arcount
         )
+
+def encode(url):
+    response = b''
+    domains = url.split('.')
+    for domain in domains:
+        response += struct.pack('>B', len(domain))
+        response += b''.join((struct.pack('>B', ord(char)) for char in domain))
+
+    response += struct.pack('>B', 0)
+    return response 
     
 
 
@@ -84,6 +94,12 @@ def main():
     #
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(("127.0.0.1", 2053))
+
+    type_dict_int = {'A' : 1}
+    type_dict = {k : struct.pack('>B', v) for k, v in type_dict_int.items()}
+
+    class_dict_int = {"IN" : 1}
+    class_dict = {k : struct.pack('>B', v) for k, v in class_dict_int.items()}
 
     first = True
 
@@ -109,6 +125,12 @@ def main():
                     arcount= 0
                 )
             response = response_data.serialize()
+            print(len(response_data))
+            print(encode('facebook.com').hex())
+
+            question = encode('codecrafters.io') + type_dict['A'] + class_dict['IN']
+            response += question
+
     
             udp_socket.sendto(response, source)
         except Exception as e:
