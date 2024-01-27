@@ -125,14 +125,13 @@ def main():
                     arcount= 0
                 )
             response = response_data.serialize()
-            print(len(response_data))
             print(encode_url('facebook.com').hex())
 
             # added the question section 
 
             question = encode_url('codecrafters.io') + type_dict['A'] + class_dict['IN']
             response += question
-            
+
 
     
             udp_socket.sendto(response, source)
