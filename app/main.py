@@ -87,6 +87,7 @@ def encode_url(url):
 
 
 def main():
+    RDLENGTH = 4
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
 
@@ -125,13 +126,14 @@ def main():
                     arcount= 0
                 )
             response = response_data.serialize()
-            print(encode_url('facebook.com').hex())
 
             # added the question section 
 
             question = encode_url('codecrafters.io') + type_dict['A'] + class_dict['IN']
             response += question
 
+            answer = encode_url('codecrafters.io') + type_dict['A'] + class_dict['IN'] + struct.pack('>I', 60) + struct.pack('>H', RDLENGTH) + struct.pack('>BBBB', 8,8,8,8)
+            response += answer
 
     
             udp_socket.sendto(response, source)
