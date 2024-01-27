@@ -74,7 +74,7 @@ class DNSMessage:
             self.arcount
         )
 
-def encode(url):
+def encode_url(url):
     response = b''
     domains = url.split('.')
     for domain in domains:
@@ -95,11 +95,11 @@ def main():
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(("127.0.0.1", 2053))
 
-    type_dict_int = {'A' : 1}
-    type_dict = {k : struct.pack('>B', v) for k, v in type_dict_int.items()}
+    type_dict_python_int = {'A' : 1}
+    type_dict = {k : struct.pack('>B', v) for k, v in type_dict_python_int.items()}
 
-    class_dict_int = {"IN" : 1}
-    class_dict = {k : struct.pack('>B', v) for k, v in class_dict_int.items()}
+    class_dict_python_int = {"IN" : 1}
+    class_dict = {k : struct.pack('>B', v) for k, v in class_dict_python_int.items()}
 
     first = True
 
@@ -119,17 +119,20 @@ def main():
                     ra = 0,
                     z = 0,
                     rcode = 0,
-                    qdcount= 0,
+                    qdcount= 1,
                     ancount= 0,
                     nscount= 0,
                     arcount= 0
                 )
             response = response_data.serialize()
             print(len(response_data))
-            print(encode('facebook.com').hex())
+            print(encode_url('facebook.com').hex())
 
-            question = encode('codecrafters.io') + type_dict['A'] + class_dict['IN']
+            # added the question section 
+
+            question = encode_url('codecrafters.io') + type_dict['A'] + class_dict['IN']
             response += question
+            
 
     
             udp_socket.sendto(response, source)
