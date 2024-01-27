@@ -96,10 +96,10 @@ def main():
     udp_socket.bind(("127.0.0.1", 2053))
 
     type_dict_python_int = {'A' : 1}
-    type_dict = {k : struct.pack('>B', v) for k, v in type_dict_python_int.items()}
+    type_dict = {k : struct.pack('>H', v) for k, v in type_dict_python_int.items()}
 
     class_dict_python_int = {"IN" : 1}
-    class_dict = {k : struct.pack('>B', v) for k, v in class_dict_python_int.items()}
+    class_dict = {k : struct.pack('>H', v) for k, v in class_dict_python_int.items()}
 
     first = True
 
