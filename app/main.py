@@ -37,7 +37,7 @@ class DNSMessage:
 
 
     @staticmethod
-    def from_header_bytes(data):
+    def from_header_bytes(buf):
         (
             id,
             combined1,
@@ -46,11 +46,11 @@ class DNSMessage:
             ancount,
             nscount,
             arcount
-        ) = struct.unpack(DNSMessage.PACK_STR, data[:12])
+        ) = struct.unpack(DNSMessage.PACK_STR, buf[:12])
 
         op_code_shift = DNSMessage.RD_LEN + DNSMessage.TC_LEN + DNSMessage.AA_LEN
         op_code = (combined1 >> op_code_shift) & 0xF
-        r_code =  0 if op_code == 0 else 4
+        r_code = 0 if op_code == 0 else 4
         rd_shift = 0
         rd = (combined1 >> rd_shift) & 0x1
 
@@ -101,7 +101,6 @@ class DNSMessage:
 
 
         return struct.pack(
-            ">HBBHHHH",
             DNSMessage.PACK_STR,
             self.id,
             combined1,
