@@ -106,20 +106,29 @@ def main():
 
     while True:
         try:
-            buf, source = udp_socket.recvfrom(512)
+            data, source = udp_socket.recvfrom(512)
+            id = struct.unpack('>H', data[0:2])[0]
+            byte = struct.unpack('>B', data[2:3])[0]
+            qr = byte >> 7 # left most bit
+            op_code = (byte >> 3) & 0b1111 # next 4 bits
+            aa = (byte >> 2) & 0b1 # 1 bit after op_code
+            tc = (byte >> 1) & 0b1 # 1 bit after aa 
+            rd = byte & 0b1 # last bit
+
+            rcode = 0 if op_code == 0 else 4
     
             response = b""
             if first:
                 response_data = DNSMessage(
-                    id = 1234,
+                    id = id,
                     qr = 1,
-                    op_code = 0,
+                    op_code = op_code,
                     aa = 0,
                     tc = 0,
-                    rd = 0,
+                    rd = rd,
                     ra = 0,
                     z = 0,
-                    rcode = 0,
+                    rcode = rcode,
                     qdcount= 1,
                     ancount= 1,
                     nscount= 0,
