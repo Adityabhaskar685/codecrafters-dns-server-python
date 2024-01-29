@@ -142,8 +142,8 @@ class Answer:
             buffer[idx : idx + struct.calcsize(ANSWER_STRUCT_FORMAT)],
         )
         idx += struct.calcsize(ANSWER_STRUCT_FORMAT)
-        data = buffer[idx: idx + length]
-        return Answer(name=name, typ=typ, cls=cls, ttl=ttl, length=length, data=data)
+        data = buffer[idx : idx + length]
+        return Answer(name=name, typ=typ, cls=cls, ttl=ttl, length=length, data=data), idx + length
     
 
 @dataclass
@@ -178,7 +178,6 @@ class DnsMessage:
             answers.append(answer)
 
         return DnsMessage(header=header, questions=questions, answers=answers)
-    
 
 def create_header(msg: Header) -> bytes:
     flag_a = msg.qr << 7 | msg.opcode << 3 | msg.aa << 2 | msg.tc << 1 | msg.rd
@@ -256,7 +255,7 @@ def main():
                 for i, q in enumerate(recv_msg.questions):
                     questions.append(Question(name = q.name, typ = 1, cls = 1))
                     answers.append(Answer(name=q.name, typ=1, cls=1, ttl=60, length=4, data=b"\x08\x08\x08\x08"))
-                    
+
                 header = Header(
                     id = recv_msg.header.id,
                     qr = 1,
