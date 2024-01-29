@@ -274,6 +274,8 @@ def main():
                     
                 )
 
+
+            
                 msg = DnsMessage(header, questions, answers)
                 udp_socket.sendto(msg.as_bytes, source)
         except Exception as e:
