@@ -2,6 +2,8 @@ import socket
 import struct
 from dataclasses import dataclass
 from typing import List, Tuple
+import sys
+import dataclasses
 
 
 HEADER_STRUCT_FORMAT = ">HBBHHHH"
@@ -92,6 +94,7 @@ class Header:
             nscount=nscount,
             arcount=arcount,
         )
+    
 @dataclass
 class Question:
     name: str
@@ -138,7 +141,8 @@ class Answer:
             ANSWER_STRUCT_FORMAT,
             buffer[idx : idx + struct.calcsize(ANSWER_STRUCT_FORMAT)],
         )
-        data = buffer[idx + struct.calcsize(ANSWER_STRUCT_FORMAT) :]
+        idx += struct.calcsize(ANSWER_STRUCT_FORMAT)
+        data = buffer[idx: idx + length]
         return Answer(name=name, typ=typ, cls=cls, ttl=ttl, length=length, data=data)
     
 
@@ -163,11 +167,17 @@ class DnsMessage:
     def parse_buffer(buffer):
         header = Header.parse_buffer(buffer)
         questions = []
+        answers = []
         offset = struct.calcsize(HEADER_STRUCT_FORMAT)
-        while offset < len(buffer):
+        for _ in range(header.qdcount):
             question, offset = Question.parse_buffer(buffer, offset)
             questions.append(question)
-        return DnsMessage(header=header, questions=questions, answers=[])
+
+        for _ in range(header.ancount):
+            answer, offset = Answer.parse_buffer(buffer, offset)
+            answers.append(answer)
+
+        return DnsMessage(header=header, questions=questions, answers=answers)
     
 
 def create_header(msg: Header) -> bytes:
@@ -183,46 +193,89 @@ def create_header(msg: Header) -> bytes:
         msg.nscount,
         msg.arcount,
     )
+
+def parse_forwarded_address():
+    if len(sys.argv) >= 3 and sys.argv[1] == "--resolver":
+        add, port = sys.argv[2].split(":")
+        return add, int(port)
+    
+    return None, None
+
+def forward_msg(buf, ip, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(buf, (ip, port))
+
+    return sock.recv(512)
+
+def split_questions(msg : DnsMessage) -> List[DnsMessage]:
+    if len(msg.questions) <= 1:
+        return [msg]
+    res = []
+    for q in msg.questions:
+        header = Header(**dataclasses.asdict(msg.header))
+        header.qdcount = 1
+        question = Question(**dataclasses.asdict(q))
+        res.append(DnsMessage(header=header, questions=[question], answers=[]))
+    return res
+
+
+
+
 def main():
+    forward_ip, forward_port = parse_forwarded_address()
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(("127.0.0.1", 2053))
     while True:
         try:
             buf, source = udp_socket.recvfrom(512)
             recv_msg = DnsMessage.parse_buffer(buf)
-            
-            questions = []
-            answers = []
-            for q in recv_msg.questions:
-                questions.append(Question(name=q.name, typ=1, cls=1))
-                answers.append(
-                    Answer(
-                        name=q.name,
-                        typ=1,
-                        cls=1,
-                        ttl=60,
-                        length=4,
-                        data=b"\x08\x08\x08\x08",
-                    )
-                )
-            header = Header(
-                id=recv_msg.header.id,
-                qr=1,
-                opcode=recv_msg.header.opcode,
-                aa=0,
-                tc=0,
-                rd=recv_msg.header.rd,
-                ra=0,
-                z=0,
-                rcode=0 if recv_msg.header.opcode == 0 else 4,
-                qdcount=len(questions),
-                ancount=len(answers),
-                nscount=0,
-                arcount=0,
-            )
+            if forward_ip is not None:
+                forward_resps = []
+                for split_msg in split_questions(recv_msg):
+                    forward_buf, forward_src = forward_msg(split_msg.as_bytes, forward_ip, forward_port)
+                    forward_resp = DnsMessage.parse_buffer(forward_buf)
+                    forward_resps.append(forward_resp)
 
-            msg = DnsMessage(header, questions, answers)
-            udp_socket.sendto(msg.as_bytes, source)
+                msg = None
+                if len(forward_resps) == 1:
+                    msg = forward_resps[0]
+                else:
+                    header = forward_resps[0].header
+                    header.qdcount = len(forward_resps)
+                    header.ancount = len(forward_resps)
+                    questions = [msg.questions[0] for msg in forward_resps]
+                    answers = [msg.answers[0] for msg in forward_resps]
+
+                    msg = DnsMessage(header, questions, answers) 
+
+                udp_socket.sendto(msg.as_bytes, source)
+            
+            else:
+                questions = []
+                answers = []
+                for i, q in enumerate(recv_msg.questions):
+                    questions.append(Question(name = q.name, typ = 1, cls = 1))
+                    answers.append(Answer(name = q.name, typ = 1, cls =1 , ttl = 60, length = 4, data= b'\x08\x08\x08\x08'))
+
+                header = Header(
+                    id = recv_msg.header.id,
+                    qr = 1,
+                    opcode = recv_msg.header.opcode,
+                    aa = 0,
+                    tc = 0,
+                    rd = recv_msg.header.rd,
+                    ra = 0,
+                    z = 0,
+                    rcode = 0 if recv_msg.header.qdcount == 0 else 4,
+                    qdcount = len(questions),
+                    ancount = len(answers),
+                    nscount= 0,
+                    arcount = 0
+                    
+                )
+
+                msg = DnsMessage(header, questions, answers)
+                udp_socket.sendto(msg.as_bytes, source)
         except Exception as e:
             print(e)
             break
