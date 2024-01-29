@@ -136,9 +136,9 @@ class Answer:
 
 @dataclass
 class DNSMessage:
-    header = Header
-    questions = List[Question]
-    answers = List[Answer]
+    header : Header
+    questions : List[Question]
+    answers : List[Answer]
 
     @property
     def as_bytes(self) -> bytes:
