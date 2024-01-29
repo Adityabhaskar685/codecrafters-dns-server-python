@@ -200,7 +200,7 @@ def main():
                 rd = rec_msg.header.rd,
                 ra = 0,
                 z = 0,
-                rcount = 0 if rec_msg.header.qdcount == 0 else 4,
+                rcode = 0 if rec_msg.header.qdcount == 0 else 4,
                 qdcount= len(questions),
                 ancount= len(answers),
                 nscount =  0,
