@@ -246,7 +246,7 @@ def main():
                     questions = [msg.questions[0] for msg in forward_resps]
                     answers = [msg.answers[0] for msg in forward_resps]
 
-                    msg = DnsMessage(header, questions, answers) 
+                    msg = DnsMessage(header = header,  questions = questions, answers = answers) 
 
                 udp_socket.sendto(msg.as_bytes, source)
             
@@ -255,8 +255,8 @@ def main():
                 answers = []
                 for i, q in enumerate(recv_msg.questions):
                     questions.append(Question(name = q.name, typ = 1, cls = 1))
-                    answers.append(Answer(name = q.name, typ = 1, cls =1 , ttl = 60, length = 4, data= b'\x08\x08\x08\x08'))
-
+                    answers.append(Answer(name=q.name, typ=1, cls=1, ttl=60, length=4, data=b"\x08\x08\x08\x08"))
+                    
                 header = Header(
                     id = recv_msg.header.id,
                     qr = 1,
