@@ -194,20 +194,21 @@ def create_header(msg: Header) -> bytes:
         msg.arcount,
     )
 
-def parse_forwarded_address():
+
+def parse_forward_address():
     if len(sys.argv) >= 3 and sys.argv[1] == "--resolver":
         add, port = sys.argv[2].split(":")
         return add, int(port)
-    
     return None, None
+
 
 def forward_msg(buf, ip, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(buf, (ip, port))
+    return sock.recvfrom(512)
 
-    return sock.recv(512)
 
-def split_questions(msg : DnsMessage) -> List[DnsMessage]:
+def split_questions(msg: DnsMessage) -> List[DnsMessage]:
     if len(msg.questions) <= 1:
         return [msg]
     res = []
@@ -215,14 +216,13 @@ def split_questions(msg : DnsMessage) -> List[DnsMessage]:
         header = Header(**dataclasses.asdict(msg.header))
         header.qdcount = 1
         question = Question(**dataclasses.asdict(q))
-        res.append(DnsMessage(header=header, questions=[question], answers=[]))
+        res.append(DnsMessage(header, questions=[question], answers=[]))
     return res
 
 
 
-
 def main():
-    forward_ip, forward_port = parse_forwarded_address()
+    forward_ip, forward_port = parse_forward_address()
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(("127.0.0.1", 2053))
     while True:
