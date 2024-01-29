@@ -65,7 +65,7 @@ class Header:
     def parse_buffer(buffer):
         (id, flag_a, flag_b, qdcount, ancount, nscount, arcount) = struct.unpack(
             HEADER_STRUCT_FORMAT,
-            buffer[: struct.clacsize(HEADER_STRUCT_FORMAT)]
+            buffer[: struct.calcsize(HEADER_STRUCT_FORMAT)]
         )
 
         qr = (flag_a >> 7) & 1
