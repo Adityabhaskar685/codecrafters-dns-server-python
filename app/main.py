@@ -40,6 +40,7 @@ class Header:
     tc: int
     rd: int
     ra: int
+    z: int
     rcode: int
     qdcount: int
     ancount: int
