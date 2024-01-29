@@ -194,7 +194,7 @@ def main():
                 id = rec_msg.header.id,
                 qr = 1,
                 opcode= rec_msg.header.opcode,
-                aa = 0
+                aa = 0,
                 tc = 0,
                 rd = rec_msg.header.rd,
                 ra = 0,
@@ -209,7 +209,7 @@ def main():
 
             resp_msg = DNSMessage(header = header, questions = questions, answers = answers)
             udp_socket.sendto(resp_msg.as_bytes, source)
-            
+
         except Exception as e:
             print(e)
             break
